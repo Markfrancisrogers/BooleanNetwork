@@ -1,0 +1,193 @@
+/*
+ * Put this docs in the bn namespace so you can refer to its member without
+ * prepending bn::
+ */
+namespace bn {
+
+/**
+ * @page attractor_basics Introduction to attractor manipulation
+ *
+ * This mini-tutorial will introduce basic a fundamental concept, the
+ * attractor, of paramount importance in Kaufman Network analysis, will
+ * demonstrate the use of several tools that will both provide a convenient
+ * abstraction barrier to the simulator internals and facilitate development of
+ * a reliable program. The related code is available in file
+ * attractor_basics.cpp.
+ *
+ * Specifically here we will learn to use a TrajectoryRunner, a Trajectory and
+ * Attractor objects; moreover we will get in touch with some libraries from
+ * <a href="http://www.boost.org">Boost</a>, whose use is widespread in the
+ * toolkit.
+ *
+ * <h2>Trajectories and attractors in Kaufman Networks</h2>
+ * A Kaufman Network with @e n nodes is a deterministic dynamical system on the
+ * space of boolean vectors of length @e n \f$\mathcal{B}^n\f$ (the
+ * <i>Configuration Space</i>). A boolean network is characterized by a function
+ * \f$\phi: \mathcal{B}^n \mapsto \mathcal{B}^n\f$ that "updates" the current
+ * state of the network \f$b_{i + 1} = \phi(b_i)\f$. Given an initial state
+ * \f$b_0 \in \mathcal{B}^n\f$, by repeated application \f$\phi\f$ we can obtain
+ * a @e trajectory in the configuration space, that is a sequence of states
+ * \f$b_0, b_1, \ldots\f$ which the network visits. Of course this sequence
+ * could go on forever, but since the configuration space is finite and the
+ * network is deterministic, eventually a trajectory will contain repeated
+ * states, that is a cycle of period @e T. We say that the network <i>reached an
+ * attractor</i> of length @e T (a cycle/attractor of period 1 is also called
+ * <i>fixed point</i>).
+ *
+ * <h2>Representation of trajectories and attractors in the toolkit</h2>
+ * The concepts of trajectory and attractor are modeled in the toolkit almost
+ * following the preceding definitions. A detailed API can be found in the
+ * related pages. A Trajectory object is an aggregate of two ordered sequences:
+ * a transient and a cycle. The transient corresponds to all of the state
+ * visited by a network before reaching a cycle. These sequences are ordered in
+ * that they store states in the order in which the network would visit them;
+ * so, for example, if we take an arbitrary state \f$b_i)\f$ from either
+ * sequence, its successor it is actually \f$\phi(b_i)\f$.
+ *
+ * A user should never attempt to manually construct a Trajectory, since there
+ * is a specific class to to that which also maintains Trajectory invariants.
+ *
+ * For the attractor, we chose two possible representations, that satisfy
+ * different user needs. One representation is implemented by Attractor class,
+ * the other one by ExplicitAttractor class (subclass of Attractor).
+ *
+ * <h3>The %Attractor class</h3>
+ * Big-sized networks can have many lengthy attractors whose in-memory
+ * representation can be quite large. Consider for example that in a network
+ * with 1024 nodes every state takes approximately \f$1024 / 8 = 128\f$ bytes
+ * in our implementation. Often a researcher is not interested in the actual
+ * states comprising an attractor, but on other aggregate statistical
+ * properties, so what he really needs is an @e implicit representation of an
+ * attractor that is comparable with objects of the same kind.
+ *
+ * An Attractor object is designed to have the smallest possible overhead in
+ * terms of memory usage. An Attractor has roughly the memory footprint of a
+ * single state. Since a Kaufman Network is deterministic, a @e single state is
+ * sufficient to unambiguously represent an attractor, since it is always
+ * possible to obtain the whole state set by evolving a network for @e T steps,
+ * where @e T is the length of the attractor (take a peek at PrintAttractor and
+ * the tutorial on @ref sample_attractors "attractor sampling"). This single
+ * state is called @e representant of the attractor.
+ *
+ * Attractors can also be given a @e total order, a property that is most useful
+ * when storing Attractor objects in STL sets. It is possible to define a total
+ * order relationship among boolean vectors, for example the lexicographical
+ * one is employed in the toolkit. Thus we can select the @e least state as the
+ * representant for an attractor. That way to determine whether an attractor is
+ * greater than another we can simply compare their representant. These
+ * conclusions make our implementation of attractors way more efficient than a
+ * naive implementation based on the sole definition.
+ *
+ * <h3>The %ExplicitAttractor class</h3>
+ * Sometimes though, we really need the attractor states. ExplicitAttractor
+ * objects give up the small memory footprint of Attractor objects and store
+ * the whole set of states, ordered as the network that generated that attractor
+ * would visit them.
+ *
+ * <h2>How to find a trajectory</h2>
+ * The only way the toolkit provides to construct a Trajectory (other than by
+ * hand, which is inadvisable) is by means of a TrajectoryRunner instance. A
+ * TrajectoryRunner object takes a network and an initial condition and evolves
+ * the network up to an attractor or until a maximum number of steps. If the
+ * maximum number of step if performed without the experiment being able to find
+ * a cycle in the trajectory, a TrajectoryRunner returns a Trajectory whose
+ * cycle sequence is @e empty and whose transient sequence comprises the states
+ * visited so far. Notice that it <i>does not</i> mean that none of the
+ * states in the transient belongs to an attractor: it simply mean that
+ * the simulation was not given enough time to reach a cycle.
+ *
+ * <h2>Example</h2>
+ * This example shows how to evolve a network up to an attractor, output some
+ * states and construct an ExplicitAttractor. A line-by-line explanation
+ * follows.
+ * @dontinclude attractor_basics.cpp
+ * First we read the only parameter for TrajectoryRunner from command line:
+ * @skipline maxSteps
+ * After that, we construct a boolean network by reading the definitions from
+ * two files (more information on file structure is found in Rbn::makeRbn):
+ * @skipline net
+ * We also initialize the seed for the random number generator:
+ * @skipline srand
+ * We then instantiate a TrajectoryRunner with the above parameter:
+ * @skipline runner
+ * and run the experiment
+ * @skipline runner
+ * This line shows a typical use of a handy tool from the
+ * <a href="http://www.boost.org">Boost Smart Pointer Library</a>: the
+ * boost::scoped_ptr. A scoped pointer is a wrapper around raw pointers that
+ * deletes the pointed object as soon as it goes out of scope, or more
+ * precisely, when its destructor is called. In this case, TrajectoryRunner
+ * method returns a pointer to the newly found Trajectory and the user has
+ * ownership of it, that is its her responsibility to free its memory when not used
+ * anymore. The scoped_ptr completely takes care of memory release and avoid the
+ * chance of programming errors. Moreover scoped_ptr often improves readability
+ * of code. For example, consider this function:
+ * @code
+ * SomeResult fun() {
+ * 	SomePolymorphicObject* obj = new Implementation;
+ * 	SomeResult r = obj->computeResult(); // first copy to hold result
+ * 	delete obj; // free memory
+ * 	return r; // return result
+ * }
+ * @endcode
+ * It involves an unnecessary copy of a SomeResult object and the programmer
+ * intention is not immediately clear. With boost::scoped_ptr one can write:
+ * @code
+ * SomeResult fun() {
+ * 	boost::scoped_ptr<SomePolymorphicObject> obj(new Implementation);
+ * 	return obj->computeResult(); // memory is automatically managed
+ * }
+ * @endcode
+ * As you can see, boost::scoped_ptr also enforce constness so, this compiles
+ * @code
+ * boost::scoped_ptr<SomeObject> ptr(new SomeObject);
+ * ptr->nonConstMethod();
+ * @endcode
+ * but this does not:
+ * @code
+ * boost::scoped_ptr<const SomeObject> ptr(new SomeObject);
+ * ptr->nonConstMethod();
+ * @endcode
+ *
+ * The following lines allow to print the states of a trajectory:
+ * @skipline cout
+ * @until printCycle
+ *
+ * Finally we work with attractor objects a bit. First we make sure that the
+ * trajectory actually contains a cycle
+ * @line cycleLength
+ * then we instantiate a new Attractor from a trajectory (actually the most
+ * reliable way to do that)
+ * @line Attractor
+ * and we print its representant
+ * @line cout
+ * and its length
+ * @line getLength
+ * If we are interested in the states contained in the attractor, we can
+ * instantiate an ExplicitAttractor from a Trajectory (using a scoped_ptr is
+ * useless in this case, it is only to show that memory is reclaimed as variable
+ * @e ax goes out of scope at the end of the @c if block)
+ * @line ExplicitAttractor
+ * and then send it through the output stream
+ * @line states
+ *
+ * To check that everything works, we can re-run another experiment this
+ * time starting from the representant of the previously found attractor.
+ * @line findAttractor
+ * Since the representant belongs to the attractor, this new trajectory should
+ * have transient sequence empty and cycle sequence size equal to the length of
+ * the previous attractor.
+ * @line getTransient
+ * @until getCycle
+ * Finally, we print this new trajectory cycle states and should notice that
+ * these states are the same as before, possibly shifted.
+ * @line Cycle
+ * @until }
+ *
+ * Below you should see the whole example.
+ *
+ * @include attractor_basics.cpp
+ */
+
+}
+

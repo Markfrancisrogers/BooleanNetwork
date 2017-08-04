@@ -1,0 +1,99 @@
+/*
+ * Put this docs in the bn namespace so you can refer to its member without
+ * prepending bn::
+ */
+namespace bn {
+
+/**
+ * @page sample_boa_sizes How to sample Basin of Attractions size
+ *
+ * This is a mini-tutorial on the BasinRunner object, an abstraction of an
+ * experiment which is capable to estimate the size of the basins of attraction
+ * in a boolean network. The related code is available in file
+ * sample_boa_sizes.cpp.
+ *
+ * <h2>Basins of attraction in a Kaufman Network</h2>
+ * Kaufman Networks are synchronous deterministic systems. Since the
+ * configuration space is finite, those properties imply that the sequence of
+ * states that a network visits during its evolution (also called trajectory)
+ * will eventually reach a cycle or fixed point (a degenerate cycle of period
+ * 1). By determinism, every given state has a @e unique successor, that is to
+ * say that trajectories have no bifurcations. By joining these two statements,
+ * we can claim that a Kaufman Network partitions the configuration space in
+ * disjoint subsets of boolean states that all lead to the same attractor; these
+ * subsets are called basins of attraction (of a specific attractor).
+ *
+ * From a systemic point of view, it is interesting to know the distribution of
+ * the @e cardinality (or size) of the basins, or equivalently the
+ * distribution of their @e weights, that is a basin size divided by the
+ * cardinality of the configuration space. Basin size distribution gives in
+ * fact information on how likely a network will reach a particular attractor
+ * starting from a random initial state.
+ *
+ * <h2>Description of the experiment</h2>
+ * As for @ref sample_attractors, obtaining empirically the precise size
+ * distribution is unfeasible but for the smallest networks because a full
+ * enumeration of the configuration space is required. In this tutorial we will
+ * resort to statistical approximation by means of a crude Monte Carlo sampling
+ * of the configuration space: for each \f$i = 1, 2, \ldots, n\f$
+ * we choose uniformly at random a boolean vector as initial condition of the
+ * network and evolve it up to an attractor. Finally we compute the occurrences
+ * of each attractor. The approach of course suffers from all the drawbacks of a
+ * crude Monte Carlo method, particularly a high variance on the estimation of
+ * the size of the smaller basins. To our knowledge, nobody has found a way to
+ * apply variance reduction methods like importance sampling or cross entropy.
+ *
+ * <h2>Implementation of the experiment</h2>
+ * Conceptually, a BasinRunner is an extension to a GardenerRunner (although
+ * there is no subclass relationship between those classes, the experiments
+ * performed are almost identical). Both objects represent in fact very similar
+ * experiments: both of them generate boolean vectors, either randomly or by
+ * enumeration of the configuration space (as of now, BasinRunner lacks the
+ * ability to enumerate the configuration space, but can be easily implemented),
+ * and then use that generated vector as initial conditions for a boolean network
+ * which is evolved up to an attractor. The main difference between the two is
+ * that a GardenerRunner <i>filters duplicate attractors</i>, while a
+ * BasinRunner still filters duplicates, but <i>keeps track of the
+ * occurrences</i> of each attractor found during the experimentation process.
+ *
+ * From a programmatic point of view, a BasinRunner is simply a counting
+ * dictionary, one of those data structure used for example in word frequency
+ * calculators. This kind of data structure, returned by running the experiment,
+ * is implemented by means of a STL map which maps an attractor (the key) to its
+ * occurrence. Actually in this implementation, the map holds @e pointers to
+ * Attractor objects, therefore to have comparison on the pointed objects we
+ * have to provide a custom comparator as the third template argument to
+ * stl::map. Fortunately, the boost::indirect_function type in the
+ * <a href="http://www.boost.org/libs/ptr_container/">The Boost Pointer
+ * Container Library</a> takes care of all the drudgery for us. See
+ * @ref sample_attractors for a similar solution.
+ *
+ * <h2>Example</h2>
+ * This example shows how to estimate basins size. A line-by-line explanation
+ * follows.
+ * @dontinclude sample_boa_sizes.cpp
+ * First comes the initialization step: reading network description and
+ * parameters from the command line, constructing a network and setting the seed
+ * for the @c PRNG.
+ * @skip maxSteps
+ * @until srand
+ * Then we initialize and run the experiment.
+ * @skipline BasinRunner
+ * We do object construction and method execution in a single instruction since
+ * we do not need the runner object any longer. Now we post-process the result.
+ * Since the output of a BasinRunner experiment is an STL map, we have at our
+ * disposal both the Attractor objects (actually @e pointers to Attractor
+ * objects) and their occurrences (<tt>unsigned int</tt>s). With the following
+ * code we will print the representant of each attractor and its occurrence.
+ * @skip const_iterator
+ * @until }
+ * In the end it is better that we free the memory allocated by the pointers in
+ * the STL map.
+ * @skip const_iterator
+ * @until delete
+ * Below you should see the whole example.
+ *
+ * @include sample_boa_sizes.cpp
+ */
+
+}

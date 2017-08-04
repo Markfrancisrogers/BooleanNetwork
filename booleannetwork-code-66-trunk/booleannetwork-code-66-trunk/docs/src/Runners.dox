@@ -1,0 +1,19 @@
+/**
+ * @defgroup runners Runners
+ *
+ * Runners are abstractions of experiments that can be carried out on a random
+ * boolean network.
+ *
+ * An experiment is modeled by a class method. Since every experiment involves
+ * random boolean networks, typically the first parameter of a method is a
+ * reference to a bn::Rbn object.
+ *
+ * Every runner is characterized by two sets of attribute:
+ * - Instance attributes are set once and for all at instantiation time and
+ * 	therefore remain fixed for the lifetime of the runner. They are modeled
+ * 	by data attributes.
+ * - Experiment attribute are associated to a single run of an experiment. They
+ * 	are modeled by function arguments.
+ *
+ * @see bn::Rbn
+ */

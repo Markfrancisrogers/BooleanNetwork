@@ -1,0 +1,6 @@
+/**
+ * @defgroup lab Virtual Laboratory
+ *
+ * This module contains common objects that are useful to gather data on the
+ * performed experiments.
+ */

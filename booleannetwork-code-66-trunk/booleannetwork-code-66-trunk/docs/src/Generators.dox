@@ -1,0 +1,28 @@
+/**
+ * @defgroup generators Generators
+ *
+ * Generators are components that factorize iteration idioms and tyipical
+ * repetetive task common in the domain of boolean network simulation.
+ *
+ * Every generator is like an implicit sequence of objects of type @e T. Like an
+ * STL sequence, generator provide methods to obtain iterators that, when
+ * dereferenced, return an element of that implicit collection. Although there
+ * is no actual STL sequence that backs a generator, they provide a familiar
+ * interface that makes working with generators intuitive.
+ *
+ * Since generators model an implicit collection, their iterators cannot be
+ * bidirectional, that is, it is not possible to "go back one step" and obtain
+ * the previous element once again.
+ *
+ * From a programming point of view, a generator models one of the
+ * <a href="http://www.boost.org/libs/range/">Boost Range</a> concepts and thus
+ * can be easilly used in STL algorithms.
+ *
+ * Generators can also be composed together to build more complex generators.
+ * Some generators can "consume" the elements returned by another generator,
+ * provided during initialization. For instance, a generator of attractors might
+ * consume elements produced by a generator of boolean states and use them as
+ * initial states for a boolean network, which is simulated until an attractor
+ * is found. That attractor is then returned by the generator, or, more
+ * precisely, by dereferencing an iterator returned by the generator.
+  */

@@ -1,0 +1,110 @@
+/*
+ * Put this docs in the bn namespace so you can refer to its member without
+ * prepending bn::
+ */
+namespace bn {
+
+/**
+ * @page sample_attractors How to sample network attractors
+ *
+ * This mini-tutorial will demonstrate the use of a GardenerRunner to
+ * sample attractors from a boolean network. The related code is available in
+ * file sample_attractors.cpp.
+ *
+ * Here we will learn to use a GardenerRunner and will acquaint with some
+ * techniques provided by the <a href="http://www.boost.org">Boost libraries</a>
+ * that ease development.
+ *
+ * One of the most common use-cases when dealing with Boolean Networks is to
+ * explore the space of the attractors. This search may be performed either
+ * in a random manner (i.e. <i>sampling</i>) or exhaustively (i.e. complete
+ * enumeration). A GardenerRunner is an abstraction such experiments;
+ * more precisely, it provides a convenient way to carry out the aforementioned
+ * kinds of search, to collect a number of attractors in a network and store
+ * them in a STL set for further use.
+ *
+ * <h2>Random sampling</h2>
+ * In this implementation, random sampling involves generating a number
+ * of initial conditions (that is boolean vectors) drawn uniformly at random
+ * from the set of all possible \f$2^n\f$ network states (which we call
+ * <i>Configuration Space</i>). Of course it is possible to come across in the
+ * same initial condition more than once; in that case the simulation would
+ * waste time in reaching a previously found attractor (remember that Kaufman
+ * Networks are deterministic systems). The most likely cause for the simulation
+ * to encounter an attractor more than once is when the initial conditions
+ * belong to the same Basin of Attraction (see @ref sample_boa_sizes for the
+ * related experiment).
+ *
+ * <h2>Complete enumeration</h2>
+ * Complete enumeration, on the other hand, guarantees to find @e all of
+ * the attractors in a network by enumeration of the possible initial conditions.
+ * As a practical note, this is a costly, and often infeasible, experiment to
+ * carry out.
+ *
+ * <h2>Example</h2>
+ * This example shows how to randomly sample some attractors of a network.
+ * A line-by-line explanation follows.
+ * @dontinclude sample_attractors.cpp
+ * First we initialize these parameters from command line:
+ * @skip maxSteps
+ * @until samples
+ * @e samples is the number of initial conditions to generate.
+ * @e maxSteps is a common parameter for all experiments that involve running a
+ * simulation until an attractor is found. It simply places a limit on the number
+ * of steps that a simulation can take before either returning something or
+ * giving up. More formally, that means that the lengths of all generated
+ * trajectories in the state space are bound by @e maxSteps. For GardnerRunner,
+ * reaching the @e maxSteps limit means that the simulation "wasted" a sample
+ * because it didn't find an attractor in the given step limit.
+ *
+ * After that, we construct a boolean network by reading the definitions from
+ * two files (more information on file structure is found in Rbn::makeRbn):
+ * @skipline net
+ * We also initialize the seed for the random number generator:
+ * @line srand
+ * We instantiate a GardenerRunner with the above parameters
+ * @line gardener
+ * and run the experiment
+ * @line findGarden
+ * Variable @e g holds a GardenerRunner::Garden object which is simply an STL
+ * set of Attractor objects. Now we are going to print the states of all
+ * these attractors. To do so, we will use std::for_each and PrintAttractor.
+ * @code
+ * std::for_each(g.begin(), g.end(), PrintAttractor(net, std::cout));
+ * @endcode
+ * Unfortunately, the type of the objects returned by the iterator is not
+ * compatible with the signature of PrintAttractor::operator()() since the
+ * latter requires a reference to const Attractor objects while the former has
+ * the dereference operator that returns a @e pointer to an Attractor object.
+ *
+ * There are at least two possible solutions and this example explores them both.
+ * We could opt to write an adapter:
+ * @code
+ * struct MyPrintAdapter {
+ * 	bn::PrintAttractor adapted;
+ * 	MyPrintAdapter(bn::Rbn& net, std::ostream& out) : adapted(net, out) {}
+ * 	void operator()(bn::Attractor* a) const {
+ * 		adapted(*a);
+ * 	}
+ * };
+ * @endcode
+ * and use it like this:
+ * @skipline for_each
+ * This approach is straightforward, yet it requires to write boilerplate code,
+ * which is a thing to avoid. <a href="http://www.boost.org/libs/ptr_container/">
+ * The Boost Pointer Container Library</a> has a generalized solution to this
+ * problem. The function boost::make_indirect_fun() wraps a function object like
+ * bn::PrintAttractor into an adapter whose operator() accepts pointers instead
+ * of actual object or references. We prefer this second approach:
+ * @skip for_each
+ * @until cout
+ * Finally, we free the memory allocated for the attractor objects using the
+ * utility function bn::util::purge():
+ * @skipline purge
+ * Below you should see the whole example.
+ *
+ * @include sample_attractors.cpp
+ */
+
+}
+

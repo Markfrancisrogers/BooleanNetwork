@@ -1,0 +1,14 @@
+/**
+ * @mainpage
+ *
+ * @section intro Introduction
+ * The Boolean Network Simulator is a C++ toolkit that allows to simulate and
+ * perform experiments on synchronous boolean networks.
+ *
+ * Follows a list of brief hands-on tutorials:
+ *
+ * @li Brief @subpage attractor_basics "introduction to trajectories and
+ * attractors" in Kaufman Networks and in this toolkit
+ * @li How to perform simple @subpage sample_attractors "attractor sampling"
+ * @li How to @subpage sample_boa_sizes "approximate Basin of Attractions size"
+ */
